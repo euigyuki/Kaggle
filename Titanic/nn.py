@@ -7,6 +7,8 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 
+#why the fuck is this working now
+
 # Load the dataset
 data = pd.read_csv('train.csv')
 test_data = pd.read_csv('test.csv')
