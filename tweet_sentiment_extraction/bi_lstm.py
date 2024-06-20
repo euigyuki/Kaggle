@@ -16,7 +16,7 @@ embedding_dim = 100
 hidden_dim = 128
 learning_rate = 0.001
 batch_size = 4
-train_set_size = 4
+train_set_size = 1
 
 # Tokenizer and labels
 tokenizer = get_tokenizer('basic_english')
@@ -36,7 +36,9 @@ class TweetDataset(Dataset):
 
     def __getitem__(self, idx):
         tweet, sentiment = self.data[idx]
-        tweet_ids = self.vocab(tokenizer(tweet)) + [self.pad_idx] * (self.max_len - len(self.vocab(tokenizer(tweet))))
+        tokenized_tweet = tokenizer(tweet)
+        indexed_tweet = self.vocab(tokenized_tweet)
+        tweet_ids = indexed_tweet + [self.pad_idx] * (self.max_len - len(indexed_tweet))
         sentiment_idx = SENTIMENT_TO_IDX[sentiment]
         tweet_tensor = torch.tensor(tweet_ids, dtype=torch.long)
         return tweet_tensor, sentiment_idx
@@ -68,7 +70,6 @@ def load_and_preprocess_data():
     train_data = pd.read_csv('train.csv')[['selected_text', 'sentiment']]
     train_data['selected_text'] = train_data['selected_text'].fillna('', inplace=False)
     train_data = train_data.values.tolist()[:train_set_size]
-    print(train_data)
     train_data = [(text, sentiment) for text, sentiment in train_data]
     return train_data
 
@@ -132,9 +133,6 @@ def main():
     # Initialize model, loss, and optimizer
     vocab_size = len(vocab)
     output_dim = len(SENTIMENT_LABELS)
-    print("sentiment labels: ",SENTIMENT_LABELS)
-    print(vocab["have"])
-    print(vocab["leave"])
     model = SentimentLSTM(vocab_size, embedding_dim, hidden_dim, output_dim)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
