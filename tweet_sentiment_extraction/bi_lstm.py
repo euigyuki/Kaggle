@@ -199,7 +199,7 @@ def main():
     #     print("test Sentiments:", sentiments)
 
     predictions = evaluate_model(test_loader, model)
-    create_submission(predictions, test_data, 'sample_submission.csv')
+    create_submission(predictions, test_data, 'final_submission.csv')
 
     evaluate_model(test_loader, model)
     print("Average padding percentage:", sum(paddings) / len(paddings))
