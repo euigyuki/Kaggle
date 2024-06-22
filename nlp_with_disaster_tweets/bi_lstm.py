@@ -13,10 +13,10 @@ from nltk.tokenize import word_tokenize
 # Training parameters
 tokenizer = word_tokenize
 
-num_epochs = 5
-embedding_dim = 50
+num_epochs = 25
+embedding_dim = 200
 hidden_dim = 128
-learning_rate = 0.001
+learning_rate = 0.002
 batch_size = 32
 CHECKING_TRAIN_SIZE = False
 CHECKING_TEST_SIZE = False
@@ -31,12 +31,26 @@ max_length = 15
 train_set_size = 2
 test_set_size = 6
 
+class AttentionBiLSTM(nn.Module):
+    def __init__(self, vocab_size, embedding_dim, hidden_dim, output_dim):
+        super(AttentionBiLSTM, self).__init__()
+        self.embedding = nn.Embedding(vocab_size, embedding_dim, padding_idx=1)
+        self.lstm = nn.LSTM(embedding_dim, hidden_dim, batch_first=True, bidirectional=True)
+        self.attention = nn.Linear(hidden_dim * 2, 1)
+        self.fc = nn.Linear(hidden_dim * 2, output_dim)
+
+    def forward(self, text):
+        embedded = self.embedding(text)
+        lstm_out, _ = self.lstm(embedded)
+        attn_weights = torch.softmax(self.attention(lstm_out), dim=1)
+        context_vector = torch.sum(attn_weights * lstm_out, dim=1)
+        return self.fc(context_vector)
 
 class SentimentNN(nn.Module):
     def __init__(self, vocab_size, embedding_dim, hidden_dim, output_dim):
         super(SentimentNN, self).__init__()
         self.embedding = nn.Embedding(vocab_size, embedding_dim, padding_idx=1)
-        self.lstm = nn.LSTM(embedding_dim, hidden_dim, batch_first=True, bidirectional=True)
+        self.lstm = nn.LSTM(embedding_dim, hidden_dim, batch_first=True, bidirectional=True,dropout=0.5)
         self.fc = nn.Linear(hidden_dim, output_dim)
 
     def forward(self, text):
@@ -92,6 +106,12 @@ def truncate_sequences(sequences, max_length):
         print("Result:", result)
     return result
 
+def sort_dataset_by_length(dataset):
+    lengths = [len(tokens) for tokens,  _ in dataset]
+    sorted_indices = sorted(range(len(lengths)), key=lambda i: lengths[i], reverse=True)
+    sorted_data = [dataset[i] for i in sorted_indices]
+    return sorted_data
+
 def load_and_preprocess_train_data():
     data = pd.read_csv('train.csv')[['text', 'target']]
     data['text'] = data['text'].fillna('')
@@ -102,7 +122,7 @@ def load_and_preprocess_train_data():
     return data
 
 def load_and_preprocess_test_data():
-    data = pd.read_csv('test.csv')[['id', 'text']]  # Include 'id' here
+    data = pd.read_csv('test.csv')[['id', 'text']] 
     data['text'] = data['text'].fillna('')
     if CHECKING_TEST_SIZE:
         data = data.values.tolist()[:test_set_size]
@@ -119,7 +139,6 @@ def create_vocab(data):
             vocab.add_word(token)        
     print("Vocabulary size:", len(vocab))
     return vocab
-
 
 
 def train_model(train_loader, model, num_epochs):
@@ -169,12 +188,14 @@ def main():
     train_dataset = TweetTrainDataset(train_data, vocab)
     test_dataset = TweetTestDataset(test_data, vocab)
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, collate_fn=train_collate_fn)
+    #train_dataset = sort_dataset_by_length(train_dataset)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=train_collate_fn)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=test_collate_fn)
 
     vocab_size = len(vocab)
     output_dim = len(DISASTER_LABELS)
-    model = SentimentNN(vocab_size, embedding_dim, hidden_dim, output_dim).to(device)
+    #model = SentimentNN(vocab_size, embedding_dim, hidden_dim, output_dim).to(device)
+    model = AttentionBiLSTM(vocab_size, embedding_dim, hidden_dim, output_dim).to(device)
  
     train_model(train_loader, model, num_epochs)
 
