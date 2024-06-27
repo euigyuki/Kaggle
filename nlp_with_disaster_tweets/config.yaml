@@ -1,0 +1,16 @@
+training:
+  num_epochs: 100
+  embedding_dim: 100
+  hidden_dim: 256
+  learning_rate: 0.001
+  batch_size: 64
+  patience_number: 10
+  weight_decay: 0.00001
+  max_norm: 1.0
+model:
+  num_layers: 2
+  dropout_rate: 0.35
+debugging:
+  train_set_size: 2
+  test_set_size: 6
+  print_statements: False
