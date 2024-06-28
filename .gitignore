@@ -24,6 +24,7 @@ checkpoint.pt
 .DS_Store
 Thumbs.db
 
+nlp_with_disaster_tweets-FINISHED/glove
 nlp_with_disaster_tweets-FINISHED/glove/glove.6B.50d.txt
 nlp_with_disaster_tweets-FINISHED/glove/glove.6B.100d.txt
 nlp_with_disaster_tweets-FINISHED/checkpoint.pt
